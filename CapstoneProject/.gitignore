@@ -1,0 +1,65 @@
+appsettings.json
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Build results
+bin/
+obj/
+out/
+
+# ASP.NET Core / .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet packages
+*.nupkg
+packages/
+*.snupkg
+.nuget/
+
+# Publish outputs
+*.Publish.xml
+*.publish/
+*.deploy/
+
+# Rider
+.idea/
+
+# IIS Express
+IISExpress/
+*.vspscc
+*.vssscc
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# User secrets (if used)
+secrets.json
+
+# JetBrains Rider
+.idea/
+
+# Node modules (if you use npm for frontend)
+node_modules/
+
+# NPM package lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# EF Core migrations (optional: only if you want to ignore them)
+# Migrations/

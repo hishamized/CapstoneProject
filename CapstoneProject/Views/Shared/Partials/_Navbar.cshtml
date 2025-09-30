@@ -1,0 +1,58 @@
+﻿
+@{
+    ViewData["Title"] = "_Navbar";
+    var adminUsername = Context.Session.GetString("AdminUsername");
+    bool isAdminLoggedIn = !string.IsNullOrEmpty(adminUsername);
+}
+<!-- Navbar -->
+<nav class="bg-gray-800 border-b border-gray-700 shadow mb-3" x-data="{ open: false }">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <!-- Brand -->
+            <a class="text-xl font-bold text-white" asp-area="" asp-controller="Home" asp-action="Index">
+                CapstoneProject
+            </a>
+
+            <!-- Desktop menu -->
+            <div class="hidden sm:flex sm:space-x-4">
+                <a class="text-gray-100 hover:text-blue-400" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                <a class="text-gray-100 hover:text-blue-400" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                @if (isAdminLoggedIn)
+                {
+                    <a asp-controller="Admin"
+                       asp-action="Dashboard"
+                       class="text-white hover:text-gray-300 font-medium">
+                        Admin Dashboard
+                    </a>
+                    <a href="/Admin/Logout"
+                       class="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-white transition duration-200">
+                        Logout Admin (@adminUsername)
+                    </a>
+                }
+                else
+                {
+                    <a href="/Admin/Login"
+                       class="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-white transition duration-200">
+                        Login Admin
+                    </a>
+                }
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="sm:hidden">
+                <button x-on:click="open = !open" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-100 hover:bg-gray-700 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path :class="{'hidden': open, 'inline-flex': !open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': !open, 'inline-flex': open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="sm:hidden" x-show="open" x-transition @@click.away="open = false">
+        <a class="block px-4 py-2 text-gray-100 hover:bg-gray-700" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+        <a class="block px-4 py-2 text-gray-100 hover:bg-gray-700" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    </div>
+</nav>
