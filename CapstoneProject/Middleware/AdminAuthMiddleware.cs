@@ -14,9 +14,10 @@ namespace CapstoneProject.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var path = context.Request.Path.ToString().ToLower();
+            var publicPaths = new[] { "/admin/login", "/admin/logout" };
 
             // Protect /AdminDashboard routes only
-            if (path.StartsWith("/admin/dashboard"))
+            if (!publicPaths.Contains(path) && path.StartsWith("/admin"))
             {
                 // Check session
                 if (context.Session.GetString("AdminUsername") == null)

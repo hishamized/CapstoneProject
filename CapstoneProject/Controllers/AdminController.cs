@@ -1,34 +1,17 @@
-﻿using BCrypt.Net;
-using CapstoneProject.JWT;
+﻿using CapstoneProject.Interfaces;
 using CapstoneProject.Models;
-using CapstoneProject.Services.Data;
-using Dapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
 
 namespace CapstoneProject.Controllers
 {
     public class AdminController : Controller
     {
-        private readonly IDbConnectionFactory _dbFactory;
-        private readonly IConfiguration _configuration;
-        private readonly JwtSettings _jwtSettings;
+        private readonly IAdminService _adminService;
 
-        public AdminController(IDbConnectionFactory dbFactory, IConfiguration configuration, IOptions<JwtSettings> jwtOptions)
+        public AdminController(IAdminService adminService)
         {
-            _dbFactory = dbFactory;
-            _configuration = configuration;
-            _jwtSettings = jwtOptions.Value;
-
+            _adminService = adminService;
         }
 
         [HttpGet]
@@ -38,50 +21,45 @@ namespace CapstoneProject.Controllers
             return View();
         }
 
+
         [HttpPost]
         public IActionResult Login(string login, string password)
         {
-            using var conn = _dbFactory.CreateConnection();
-            conn.Open();
+            var result = _adminService.Login(login, password);
 
-            // Query admin using Dapper: check username OR email OR phone
-            var admin = conn.QueryFirstOrDefault<Admin>(
-                @"SELECT * FROM Admins 
-          WHERE Username = @Login OR Email = @Login OR Phone = @Login",
-                new { Login = login }
-            );
-
-            if (admin == null || !BCrypt.Net.BCrypt.Verify(password, admin.HashedPassword))
+            if (!result.Success)
             {
-                return RedirectToAction("Login", new { message = "Invalid credentials" });
+                return RedirectToAction("Login", new { message = result.Message });
             }
 
-            // ✅ Set session
-            HttpContext.Session.SetString("AdminUsername", admin.Username);
+            // Only HTTP concerns left here:
+            HttpContext.Session.SetString("AdminUsername", result.Admin.Username);
 
-            // ✅ Set cookie
-            HttpContext.Response.Cookies.Append("AdminUsername", admin.Username, new CookieOptions
+            HttpContext.Response.Cookies.Append("AdminUsername", result.Admin.Username, new CookieOptions
             {
                 HttpOnly = true,
                 Expires = DateTimeOffset.Now.AddMinutes(30)
             });
 
-            string jwt = GenerateJwtToken(admin.Username);
-
-
-            HttpContext.Response.Cookies.Append("AdminJwtToken", jwt, new CookieOptions
+            HttpContext.Response.Cookies.Append("AdminJwtToken", result.JwtToken, new CookieOptions
             {
                 HttpOnly = true,
                 Expires = DateTimeOffset.Now.AddMinutes(30)
             });
+
+            TempData["AdminName"] = result.Admin.FullName;
+            TempData["AdminUsername"] = result.Admin.Username;
+            TempData["AdminEmail"] = result.Admin.Email;
 
             return RedirectToAction("Dashboard");
         }
 
-        [Authorize]
+
         [HttpGet]
         public IActionResult Dashboard()
         {
+            ViewBag.Roles = _adminService.GetRoles();
+
             ViewBag.AdminUsername = HttpContext.Session.GetString("AdminUsername");
             return View();
         }
@@ -89,35 +67,112 @@ namespace CapstoneProject.Controllers
         [HttpGet]
         public IActionResult Logout()
         {
-            HttpContext.Session.Clear();
-            Response.Cookies.Delete("AdminUsername");
-            Response.Cookies.Delete("AdminJwtToken");
+            _adminService.Logout(HttpContext);
             return RedirectToAction("Login", new { message = "Logged out successfully" });
         }
 
-        private string GenerateJwtToken(string username)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddAdmin(Admin admin)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            if (!ModelState.IsValid)
             {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                new Claim(ClaimTypes.Name, username),
-                new Claim(ClaimTypes.Role, "Admin")
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiresMinutes),
-                Issuer = _jwtSettings.Issuer,
-                Audience = _jwtSettings.Audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature
-                )
-            };
+                // Collect all errors into a single string
+                var allErrors = ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))
+                    .ToList();
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+                // Join all errors into one string (or separate by <br> for HTML)
+                TempData["ErrorMessage"] = string.Join(" | ", allErrors);
+
+                return RedirectToAction("Dashboard");
+            }
+
+
+            var result = _adminService.AddAdmin(admin);
+
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+
+            return RedirectToAction("Dashboard");
         }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddCategory(Category category, IFormFile? imageFile)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Collect errors
+                var allErrors = ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))
+                    .ToList();
+
+                TempData["ErrorMessage"] = string.Join(" | ", allErrors);
+                return RedirectToAction("Dashboard"); // or wherever your form resides
+            }
+
+            var result = _adminService.AddCategory(category, imageFile);
+
+            if (result.Success)
+                TempData["SuccessMessage"] = result.Message;
+            else
+                TempData["ErrorMessage"] = result.Message;
+
+            return RedirectToAction("Dashboard");
+        }
+
+        [HttpGet]
+        public IActionResult ManageCategories()
+        {
+            var categories = _adminService.GetAllCategories();
+            return View(categories);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateCategory(Category category, IFormFile? newImageFile, bool deleteImage = false)
+        {
+            // manual validation for required field(s)
+            if (string.IsNullOrWhiteSpace(category.Name))
+            {
+                TempData["Error"] = "Name is required.";
+                return RedirectToAction("ManageCategories");
+            }
+
+            var result = _adminService.UpdateCategory(category, newImageFile, deleteImage);
+
+            if (result.Success)
+                TempData["Success"] = result.Message;
+            else
+                TempData["Error"] = result.Message;
+
+            return RedirectToAction("ManageCategories");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteCategory(int id)
+        {
+            var result = _adminService.DeleteCategory(id);
+
+            if (result.Success)
+                TempData["Success"] = result.Message;
+            else
+                TempData["Error"] = result.Message;
+
+            return RedirectToAction("ManageCategories");
+        }
+
     }
 }

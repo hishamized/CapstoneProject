@@ -1,6 +1,8 @@
 using CapstoneProject.Data;
+using CapstoneProject.Interfaces;
 using CapstoneProject.JWT;
 using CapstoneProject.Middleware;
+using CapstoneProject.Services;
 using CapstoneProject.Services.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +45,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.AddScoped<IAdminService, AdminService>();
+
+
+
 
 
 var app = builder.Build();

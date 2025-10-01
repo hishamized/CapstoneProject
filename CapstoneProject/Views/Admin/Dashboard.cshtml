@@ -1,10 +1,11 @@
-﻿@{
+﻿@model CapstoneProject.Models.Admin
+
+@{
     ViewData["Title"] = "Admin Dashboard";
-    var adminUsername = ViewBag.AdminUsername ?? "Admin";
 }
 
-<body class="bg-gray-900 text-gray-100 min-h-screen flex">
-    <div x-data="{ sidebarOpen: true }" class="flex w-full">
+<div class="bg-gray-900 text-gray-100 min-h-screen flex">
+    <div x-data="{ sidebarOpen: true, currentPage: 'dashboard' }" class="flex w-full">
 
         <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
@@ -12,17 +13,26 @@
                       transform transition-transform duration-300">
             <h2 class="text-2xl font-bold text-red-500 mb-8">Admin Panel</h2>
             <ul class="space-y-2">
-                <li><a href="#" class="block px-3 py-2 rounded hover:bg-gray-700">Dashboard</a></li>
-                <li><a href="#" class="block px-3 py-2 rounded hover:bg-gray-700">Admins</a></li>
-                <li><a href="#" class="block px-3 py-2 rounded hover:bg-gray-700">Roles</a></li>
-                <li><a href="#" class="block px-3 py-2 rounded hover:bg-gray-700">Settings</a></li>
+                <li><button @@click ="currentPage = 'dashboard'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Dashboard</button></li>
+                <li><button @@click ="currentPage = 'admins'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Admins</button></li>
+                <li><button @@click ="currentPage = 'roles'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Roles</button></li>
+                <li><button @@click ="currentPage = 'settings'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Settings</button></li>
+                <li><button @@click="currentPage = 'AddAdmin'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Add Admin</button></li>
+                <li><button @@click="currentPage = 'AddCategory'" class="w-full text-left px-3 py-2 rounded hover:bg-gray-700">Add Category</button></li>
+                <li>
+                    <a href="@Url.Action("ManageCategories", "Admin")"
+                       class="w-full block px-3 py-2 rounded hover:bg-gray-700 text-left">
+                        Manage Categories
+                    </a>
+                </li>
             </ul>
         </aside>
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col md:ml-64 transition-all duration-300">
-            <!-- Top navbar / toggle button -->
+            <!-- Top navbar -->
             <nav class="flex items-center justify-between bg-gray-800 border-b border-gray-700 px-6 py-4">
+                <!-- Sidebar toggle -->
                 <button x-on:click="sidebarOpen = !sidebarOpen"
                         class="md:hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -31,36 +41,216 @@
                               d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <div>Hello, @adminUsername</div>
+
+                <!-- Admin Info -->
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <p class="font-semibold">@TempData["AdminName"]</p>
+                        <p class="text-sm text-gray-400">@TempData["AdminUsername"]</p>
+                        <p class="text-sm text-gray-400">@TempData["AdminEmail"]</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="bg-green-500 text-white px-4 py-2 rounded shadow">
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    else if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="bg-red-500 text-white px-4 py-2 rounded shadow">
+                            @TempData["ErrorMessage"]
+                        </div>
+                    }
+
+
+                </div>
+
+
+                <!-- Logout -->
                 <a href="/Admin/Logout"
                    class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white">Logout</a>
             </nav>
 
-            <!-- Dashboard content -->
+            <!-- Dynamic content -->
             <main class="p-6 flex-1 overflow-y-auto">
-                <h1 class="text-3xl font-bold mb-6 text-red-500">Dashboard</h1>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Card example -->
-                    <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
-                        <h2 class="text-xl font-semibold mb-2">Total Admins</h2>
-                        <p class="text-gray-300 text-2xl">5</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
-                        <h2 class="text-xl font-semibold mb-2">Total Roles</h2>
-                        <p class="text-gray-300 text-2xl">5</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
-                        <h2 class="text-xl font-semibold mb-2">Pending Tasks</h2>
-                        <p class="text-gray-300 text-2xl">12</p>
+                <!-- Dashboard -->
+                <div x-show="currentPage === 'dashboard'" x-cloak>
+                    <h1 class="text-3xl font-bold mb-6 text-red-500">Dashboard</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
+                            <h2 class="text-xl font-semibold mb-2">Total Admins</h2>
+                            <p class="text-gray-300 text-2xl">5</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
+                            <h2 class="text-xl font-semibold mb-2">Total Roles</h2>
+                            <p class="text-gray-300 text-2xl">5</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded shadow hover:shadow-lg transition duration-200">
+                            <h2 class="text-xl font-semibold mb-2">Pending Tasks</h2>
+                            <p class="text-gray-300 text-2xl">12</p>
+                        </div>
                     </div>
                 </div>
-            </main>
 
-            <!-- Footer -->
-            <footer class="bg-gray-800 border-t border-gray-700 text-gray-400 p-4 text-center">
-                &copy; 2025 CapstoneProject - Admin Dashboard
-            </footer>
+                <!-- Admins -->
+                <div x-show="currentPage === 'admins'" x-cloak>
+                    <h1 class="text-3xl font-bold mb-6 text-red-500">Admins</h1>
+                    <p class="text-gray-400">Manage admin accounts here.</p>
+                </div>
+
+                <!-- Roles -->
+                <div x-show="currentPage === 'roles'" x-cloak>
+                    <h1 class="text-3xl font-bold mb-6 text-red-500">Roles</h1>
+                    <p class="text-gray-400">Role management section.</p>
+                </div>
+
+                <!-- Settings -->
+                <div x-show="currentPage === 'settings'" x-cloak>
+                    <h1 class="text-3xl font-bold mb-6 text-red-500">Settings</h1>
+                    <p class="text-gray-400">Application settings go here.</p>
+                </div>
+                <!-- Add Admin -->
+                <div x-show="currentPage === 'AddAdmin'" x-cloak>
+                    <h1 class="text-3xl font-bold mb-6 text-red-500">Add Admin</h1>
+                    <p class="text-gray-400 mb-6">Fill in the details to add a new admin.</p>
+
+                    <form asp-action="AddAdmin" method="post" class="space-y-6 max-w-2xl">
+                        @Html.AntiForgeryToken()
+                        <div>
+                            <label asp-for="FullName" class="block text-sm font-medium text-gray-300 mb-1"></label>
+                            <input asp-for="FullName" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            <span asp-validation-for="FullName" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Username" class="block text-sm font-medium text-gray-300 mb-1"></label>
+                            <input asp-for="Username" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            <span asp-validation-for="Username" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Email" class="block text-sm font-medium text-gray-300 mb-1"></label>
+                            <input asp-for="Email" type="email" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            <span asp-validation-for="Email" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Phone" class="block text-sm font-medium text-gray-300 mb-1"></label>
+                            <input asp-for="Phone" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            <span asp-validation-for="Phone" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="HashedPassword" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                            <input asp-for="HashedPassword" type="password" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            <span asp-validation-for="HashedPassword" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="RoleId" class="block text-sm font-medium text-gray-300 mb-1">Role</label>
+                            <select asp-for="RoleId" asp-items="ViewBag.Roles" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="">-- Select Role --</option>
+                            </select>
+                            <span asp-validation-for="RoleId" class="text-red-400 text-sm"></span>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition">
+                                Add Admin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- AddCategory Form -->
+                <div x-show="currentPage === 'AddCategory'" x-cloak class="max-w-3xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
+                    <h1 class="text-3xl font-bold mb-4 text-red-500">Add Category</h1>
+                    <p class="text-gray-400 mb-6">Fill out the form to create a new category.</p>
+
+                    <form asp-controller="Admin" asp-action="AddCategory" method="post" class="space-y-6" enctype="multipart/form-data" @@submit.prevent ="validateFile($event)">
+                        <!-- Name -->
+                        <div>
+                            <label for="Name" class="block text-sm font-medium text-gray-300 mb-1">Category Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="Name" id="Name" maxlength="100"
+                                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                                   placeholder="Enter category name" required>
+                            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="Name"></span>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label for="Description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                            <textarea name="Description" id="Description" maxlength="250"
+                                      class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                                      placeholder="Optional description for the category"></textarea>
+                            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="Description"></span>
+                        </div>
+
+                        <!-- Image -->
+                        <div>
+                            <label for="ImageUrl" class="block text-sm font-medium text-gray-300 mb-1">Category Image</label>
+
+                            <!-- Actual file upload -->
+                            <input type="file" name="imageFile" id="ImageUrl"
+                                   class="w-full text-gray-200 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+
+                            <!-- Hidden or dummy input to satisfy model validation -->
+                            <input type="hidden" name="ImageUrl" value="placeholder.jpg" />
+
+                            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="ImageUrl"></span>
+                        </div>
+
+
+                        <!-- Is Active -->
+                        <div>
+                            <label for="IsActive" class="block text-sm font-medium text-gray-300 mb-1">Active</label>
+                            <select name="IsActive" id="IsActive"
+                                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200">
+                                <option value="true" selected>True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+
+
+
+                        <!-- Submit Button -->
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition">
+                                Add Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                @section Scripts {
+                    <partial name="_ValidationScriptsPartial" />
+                    <script>
+                        $(document).ready(function() {
+                            // Target the AddCategory form by its action attribute
+                            $('form[action="/Admin/AddCategory"]').on('submit', function(e) {
+                                var fileInput = $(this).find('input[name="imageFile"]')[0];
+                                var filePath = fileInput.value;
+
+                                if (filePath) {
+                                    var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.gif|\.webp)$/i;
+                                    if (!allowedExtensions.exec(filePath)) {
+                                        e.preventDefault(); // stop form submission
+                                        alert('Invalid file type. Only .jpg, .jpeg, .png, .gif, .webp files are allowed.');
+                                        fileInput.value = ''; // clear input
+                                        return false;
+                                    }
+                                }
+                            });
+                        });
+                    </script>
+                }
+
+
+            </main>
         </div>
     </div>
-</body>
+</div>

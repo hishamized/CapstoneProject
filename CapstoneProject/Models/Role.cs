@@ -1,8 +1,11 @@
-﻿namespace CapstoneProject.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CapstoneProject.Models
 {
     public class Role
     {
-        public int Id { get; set; }
+        [Required]
+        public int? Id { get; set; }
 
         public string Name { get; set; }
 
