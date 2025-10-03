@@ -1,0 +1,80 @@
+﻿@model CapstoneProject.Models.Product
+@* Optional: pass categories in ViewBag.Categories for dropdown *@
+
+<div x-show="currentPage === 'AddProduct'" x-cloak class="max-w-3xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold mb-4 text-red-500">Add Product</h1>
+
+    <form asp-controller="Admin" asp-action="AddProduct" method="post" enctype="multipart/form-data" class="space-y-6">
+
+        <!-- Name -->
+        <div>
+            <label for="Name" class="block text-sm font-medium text-gray-300 mb-1">Product Name <span class="text-red-500">*</span></label>
+            <input type="text" name="Name" id="Name" maxlength="150"
+                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                   placeholder="Enter product name" required />
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label for="Description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+            <textarea name="Description" id="Description" maxlength="500"
+                      class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                      placeholder="Optional product description"></textarea>
+        </div>
+
+        <!-- Price -->
+        <div>
+            <label for="Price" class="block text-sm font-medium text-gray-300 mb-1">Price ($)<span class="text-red-500">*</span></label>
+            <input type="number" step="0.01" name="Price" id="Price"
+                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                   placeholder="Enter price" required />
+        </div>
+
+        <!-- Stock Quantity -->
+        <div>
+            <label for="StockQuantity" class="block text-sm font-medium text-gray-300 mb-1">Stock Quantity<span class="text-red-500">*</span></label>
+            <input type="number" name="StockQuantity" id="StockQuantity"
+                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                   placeholder="Enter stock quantity" required />
+        </div>
+
+        <!-- Category -->
+        <div>
+            <label for="CategoryId" class="block text-sm font-medium text-gray-300 mb-1">Category<span class="text-red-500">*</span></label>
+            <select name="CategoryId" id="CategoryId"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200" required>
+                <option value="">-- Select Category --</option>
+                @foreach (var cat in ViewBag.Categories)
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Is Active -->
+        <div>
+            <label for="IsActive" class="block text-sm font-medium text-gray-300 mb-1">Active</label>
+            <select name="IsActive" id="IsActive"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200">
+                <option value="true" selected>True</option>
+                <option value="false">False</option>
+            </select>
+        </div>
+
+        <!-- Images (multiple) -->
+        <div>
+            <label for="Images" class="block text-sm font-medium text-gray-300 mb-1">Product Images</label>
+            <input type="file" name="Images" id="Images" multiple
+                   class="w-full text-gray-200 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <p class="text-gray-400 text-sm mt-1">You can upload multiple images (jpg, png, webp, gif).</p>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-end">
+            <button type="submit"
+                    class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition">
+                Add Product
+            </button>
+        </div>
+    </form>
+</div>

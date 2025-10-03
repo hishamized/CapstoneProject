@@ -45,7 +45,7 @@
                     <td class="border border-gray-600 px-4 py-2">@category.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td class="border border-gray-600 px-4 py-2">@category.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td class="border border-gray-600 px-4 py-2 space-x-2">
-                        <button class="bg-yellow-500 text-black px-3 py-1 rounded"
+                        <button class="bg-yellow-500 text-black px-3 py-1 rounded my-2"
                                 @@click="showModal = true; category = {
                                     Id: '@category.Id',
                                     Name: '@category.Name',
@@ -55,7 +55,7 @@
                                 }">
                             Edit
                         </button>
-                        <button class="bg-red-500 text-white px-3 py-1 rounded"
+                        <button class="bg-red-500 text-white px-3 py-1 rounded my-2"
                                 @@click="showDeleteModal = true; category = { Id: '@category.Id', Name: '@category.Name' }">
                             Delete
                         </button>
@@ -141,9 +141,7 @@
                       asp-action="DeleteCategory"
                       method="post"
                       class="inline">
-                    <input name="__RequestVerificationToken"
-                           type="hidden"
-                           value="@@Antiforgery.GetTokens(HttpContext).RequestToken" />
+                    @Html.AntiForgeryToken()
                     <input type="hidden" name="id" x-model="category.Id" />
                     <button type="submit"
                             class="px-4 py-2 bg-red-500 text-white rounded">

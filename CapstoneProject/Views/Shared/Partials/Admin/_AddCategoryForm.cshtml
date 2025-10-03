@@ -1,0 +1,60 @@
+﻿  <!-- AddCategory Form -->
+<div x-show="currentPage === 'AddCategory'" x-cloak class="max-w-3xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold mb-4 text-red-500">Add Category</h1>
+    <p class="text-gray-400 mb-6">Fill out the form to create a new category.</p>
+
+    <form asp-controller="Admin" asp-action="AddCategory" method="post" class="space-y-6" enctype="multipart/form-data" @@submit.prevent="validateFile($event)">
+        <!-- Name -->
+        <div>
+            <label for="Name" class="block text-sm font-medium text-gray-300 mb-1">Category Name <span class="text-red-500">*</span></label>
+            <input type="text" name="Name" id="Name" maxlength="100"
+                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                   placeholder="Enter category name" required>
+            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="Name"></span>
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label for="Description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+            <textarea name="Description" id="Description" maxlength="250"
+                      class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200"
+                      placeholder="Optional description for the category"></textarea>
+            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="Description"></span>
+        </div>
+
+        <!-- Image -->
+        <div>
+            <label for="ImageUrl" class="block text-sm font-medium text-gray-300 mb-1">Category Image</label>
+
+            <!-- Actual file upload -->
+            <input type="file" name="imageFile" id="ImageUrl"
+                   class="w-full text-gray-200 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+
+            <!-- Hidden or dummy input to satisfy model validation -->
+            <input type="hidden" name="ImageUrl" value="placeholder.jpg" />
+
+            <span class="text-red-400 text-sm mt-1 block" data-valmsg-for="ImageUrl"></span>
+        </div>
+
+
+        <!-- Is Active -->
+        <div>
+            <label for="IsActive" class="block text-sm font-medium text-gray-300 mb-1">Active</label>
+            <select name="IsActive" id="IsActive"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-200">
+                <option value="true" selected>True</option>
+                <option value="false">False</option>
+            </select>
+        </div>
+
+
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+            <button type="submit"
+                    class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition">
+                Add Category
+            </button>
+        </div>
+    </form>
+</div>

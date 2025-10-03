@@ -2,6 +2,7 @@
 using CapstoneProject.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 
 namespace CapstoneProject.Controllers
 {
@@ -12,6 +13,7 @@ namespace CapstoneProject.Controllers
         public AdminController(IAdminService adminService)
         {
             _adminService = adminService;
+
         }
 
         [HttpGet]
@@ -59,6 +61,9 @@ namespace CapstoneProject.Controllers
         public IActionResult Dashboard()
         {
             ViewBag.Roles = _adminService.GetRoles();
+            ViewBag.Categories = _adminService.GetAllCategories();
+            ViewBag.Admins = _adminService.GetAllAdmins();
+
 
             ViewBag.AdminUsername = HttpContext.Session.GetString("AdminUsername");
             return View();
@@ -139,6 +144,16 @@ namespace CapstoneProject.Controllers
             return View(categories);
         }
 
+        [HttpGet]
+        public IActionResult ManageProducts()
+        {
+            var categories = _adminService.GetAllCategories();
+            ViewBag.Categories = categories;
+
+            var products = _adminService.GetAllProducts();
+            return View(products);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult UpdateCategory(Category category, IFormFile? newImageFile, bool deleteImage = false)
@@ -173,6 +188,74 @@ namespace CapstoneProject.Controllers
 
             return RedirectToAction("ManageCategories");
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddProduct(Product model, List<IFormFile> Images)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Invalid product data!";
+                return RedirectToAction("Dashboard");
+            }
+
+            var result = await _adminService.AddProductAsync(model, Images);
+
+            if (result.Success)
+                TempData["SuccessMessage"] = result.Message;
+            else
+                TempData["ErrorMessage"] = result.Message;
+
+            return RedirectToAction("Dashboard");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProduct(Product product, List<int> deleteImages, List<IFormFile> NewImages)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Invalid product data.";
+                return RedirectToAction("ManageProducts");
+            }
+
+            try
+            {
+                // Pass everything to the service (DB + file upload handled there)
+                await _adminService.UpdateProductAsync(product, deleteImages, NewImages);
+
+                TempData["Success"] = "Product updated successfully!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to update product: {ex.Message}";
+            }
+
+            return RedirectToAction("ManageProducts");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteProduct(int Id)
+        {
+            try
+            {
+                bool deleted = await _adminService.DeleteProductAsync(Id);
+
+                if (deleted)
+                    TempData["Success"] = "Product deleted successfully.";
+                else
+                    TempData["Error"] = "Product not found or could not be deleted.";
+
+                return RedirectToAction("ManageProducts");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error deleting product: {ex.Message}";
+                return RedirectToAction("ManageProducts");
+            }
+        }
+
 
     }
 }

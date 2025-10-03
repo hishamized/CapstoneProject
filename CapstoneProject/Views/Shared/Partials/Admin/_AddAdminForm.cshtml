@@ -1,0 +1,53 @@
+﻿@model CapstoneProject.Models.Admin
+
+<div x-show="currentPage === 'AddAdmin'" x-cloak>
+    <h1 class="text-3xl font-bold mb-6 text-red-500">Add Admin</h1>
+    <p class="text-gray-400 mb-6">Fill in the details to add a new admin.</p>
+
+    <form asp-action="AddAdmin" method="post" class="space-y-6 max-w-2xl">
+        @Html.AntiForgeryToken()
+        <div>
+            <label asp-for="FullName" class="block text-sm font-medium text-gray-300 mb-1"></label>
+            <input asp-for="FullName" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <span asp-validation-for="FullName" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div>
+            <label asp-for="Username" class="block text-sm font-medium text-gray-300 mb-1"></label>
+            <input asp-for="Username" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <span asp-validation-for="Username" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div>
+            <label asp-for="Email" class="block text-sm font-medium text-gray-300 mb-1"></label>
+            <input asp-for="Email" type="email" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <span asp-validation-for="Email" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div>
+            <label asp-for="Phone" class="block text-sm font-medium text-gray-300 mb-1"></label>
+            <input asp-for="Phone" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <span asp-validation-for="Phone" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div>
+            <label asp-for="HashedPassword" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+            <input asp-for="HashedPassword" type="password" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <span asp-validation-for="HashedPassword" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div>
+            <label asp-for="RoleId" class="block text-sm font-medium text-gray-300 mb-1">Role</label>
+            <select asp-for="RoleId" asp-items="ViewBag.Roles" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                <option value="">-- Select Role --</option>
+            </select>
+            <span asp-validation-for="RoleId" class="text-red-400 text-sm"></span>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition">
+                Add Admin
+            </button>
+        </div>
+    </form>
+</div>

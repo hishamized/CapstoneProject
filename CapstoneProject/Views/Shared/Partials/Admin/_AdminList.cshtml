@@ -1,0 +1,36 @@
+﻿@model IEnumerable<CapstoneProject.Models.Admin>
+@{
+    var admins = ViewBag.Admins as IEnumerable<CapstoneProject.Models.Admin>;
+    var loggedInUsername = ViewBag.AdminUsername as string;
+}
+
+<div class="overflow-x-auto max-w-6xl mx-auto px-4">
+    <table class="min-w-full divide-y divide-gray-700 shadow-md rounded-lg bg-gray-900 text-gray-200">
+        <thead class="bg-gray-800">
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Full Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Username</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Email</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Phone</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Created At</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700">
+            @foreach (var admin in admins)
+            {
+                var isCurrent = admin.Username == loggedInUsername;
+                <tr class="@(isCurrent ? "bg-yellow-700 font-semibold" : "hover:bg-gray-700")">
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.Id</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.FullName</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.Username</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.Email</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.Phone</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.Role?.Name</td>
+                    <td class="px-4 py-3 whitespace-nowrap">@admin.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

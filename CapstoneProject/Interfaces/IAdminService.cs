@@ -17,8 +17,18 @@ namespace CapstoneProject.Interfaces
 
         (bool Success, string Message) DeleteCategory(int categoryId);
 
+        Task<(bool Success, string Message)> AddProductAsync(Product product, IEnumerable<IFormFile> images);
+
         IEnumerable<Category> GetAllCategories();
 
+        IEnumerable<Product> GetAllProducts();
+
+        IEnumerable<Admin> GetAllAdmins();
+
+        Task<Product> GetProductByIdAsync(int id);
+        Task<bool> UpdateProductAsync(Product product, List<int> deleteImageIds = null, IEnumerable<IFormFile> newImages = null);
+
+        Task<bool> DeleteProductAsync(int productId);
     }
 
     public class LoginResult

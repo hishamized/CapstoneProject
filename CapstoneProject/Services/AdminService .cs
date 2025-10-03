@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Transactions;
 
 namespace CapstoneProject.Services
 {
@@ -242,6 +243,73 @@ namespace CapstoneProject.Services
             return categories;
         }
 
+        public IEnumerable<Product> GetAllProducts()
+        {
+            using var connection = _dbFactory.CreateConnection();
+            connection.Open();
+
+            var sql = @"
+        SELECT 
+            p.Id, p.Name, p.Description, p.Price, p.StockQuantity, p.IsActive, p.CategoryId, p.CreatedAt, p.UpdatedAt,
+            pi.Id, pi.ImageUrl, pi.Extension, pi.SizeInBytes, pi.IsPrimary, pi.ProductId, pi.CreatedAt, pi.UpdatedAt
+        FROM Products p
+        LEFT JOIN ProductImage pi ON pi.ProductId = p.Id
+        ORDER BY p.CreatedAt DESC
+    ";
+
+            var productDict = new Dictionary<int, Product>();
+
+            var products = connection.Query<Product, ProductImage, Product>(
+                sql,
+                (product, image) =>
+                {
+                    if (!productDict.TryGetValue(product.Id, out var currentProduct))
+                    {
+                        currentProduct = product;
+                        currentProduct.Images = new List<ProductImage>();
+                        productDict.Add(currentProduct.Id, currentProduct);
+                    }
+
+                    if (image != null)
+                    {
+                        currentProduct.Images.Add(image);
+                    }
+
+                    return currentProduct;
+                },
+                splitOn: "Id"
+            );
+
+            return productDict.Values;
+        }
+
+        public IEnumerable<Admin> GetAllAdmins()
+        {
+            using var conn = _dbFactory.CreateConnection();
+            conn.Open();
+
+            var sql = @"
+        SELECT 
+            a.Id, a.FullName, a.Username, a.Email, a.Phone, a.RoleId,
+            r.Id, r.Name, r.Description
+        FROM Admins a
+        INNER JOIN Roles r ON a.RoleId = r.Id";
+
+   
+            var admins = conn.Query<Admin, Role, Admin>(
+                sql,
+                (admin, role) =>
+                {
+                    admin.Role = role;
+                    return admin;
+                },
+                splitOn: "Id" 
+            );
+
+            return admins;
+        }
+
+
         public (bool Success, string Message) UpdateCategory(Category updatedCategory, IFormFile? newImageFile, bool deleteImage)
         {
             try
@@ -338,7 +406,7 @@ namespace CapstoneProject.Services
                 if (category == null)
                     return (false, "Category not found.");
 
-                // Delete image file if exists
+               
                 if (!string.IsNullOrEmpty(category.ImageUrl))
                 {
                     var filePath = Path.Combine(_environment.WebRootPath, category.ImageUrl.TrimStart('/'));
@@ -346,7 +414,7 @@ namespace CapstoneProject.Services
                         File.Delete(filePath);
                 }
 
-                // Delete from DB
+               
                 int rows = connection.Execute("DELETE FROM Categories WHERE Id = @Id", new { Id = categoryId });
 
                 return rows > 0
@@ -356,6 +424,249 @@ namespace CapstoneProject.Services
             catch (Exception ex)
             {
                 return (false, $"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> AddProductAsync(Product product, IEnumerable<IFormFile> images)
+        {
+            if (product == null)
+                return (false, "Product cannot be null.");
+
+            try
+            {
+                using var connection = (SqlConnection)_dbFactory.CreateConnection();
+                await connection.OpenAsync();
+
+                using var transaction = connection.BeginTransaction();
+
+           
+                var insertProductSql = @"
+            INSERT INTO Products 
+            (Name, Description, Price, StockQuantity, IsActive, CategoryId, CreatedAt, UpdatedAt)
+            VALUES 
+            (@Name, @Description, @Price, @StockQuantity, @IsActive, @CategoryId, @CreatedAt, @UpdatedAt);
+            SELECT CAST(SCOPE_IDENTITY() as int);
+        ";
+
+                product.CreatedAt = DateTime.UtcNow;
+                product.UpdatedAt = DateTime.UtcNow;
+
+                var productId = await connection.QuerySingleAsync<int>(insertProductSql, product, transaction);
+
+     
+                if (images != null && images.Any())
+                {
+                    var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads/products");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    foreach (var file in images)
+                    {
+                        var extension = Path.GetExtension(file.FileName).ToLower();
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+                        if (!allowedExtensions.Contains(extension))
+                        {
+                            throw new InvalidOperationException("Only image files (.jpg, .jpeg, .png, .gif, .webp) are allowed.");
+                        }
+
+                        var fileName = $"{Guid.NewGuid()}{extension}";
+                        var filePath = Path.Combine(uploadsFolder, fileName);
+
+                        // Save file
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        // Insert into ProductImages
+                        var insertImageSql = @"
+                    INSERT INTO ProductImage
+                    (ProductId, ImageUrl, Extension, SizeInBytes, IsPrimary, CreatedAt, UpdatedAt)
+                    VALUES
+                    (@ProductId, @ImageUrl, @Extension, @SizeInBytes, @IsPrimary, @CreatedAt, @UpdatedAt)
+                ";
+
+                        await connection.ExecuteAsync(insertImageSql, new
+                        {
+                            ProductId = productId,
+                            ImageUrl = $"/uploads/products/{fileName}",
+                            Extension = extension.Replace(".", ""),
+                            SizeInBytes = file.Length,
+                            IsPrimary = product.Images.Count == 0, // first image primary
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        }, transaction);
+                    }
+                }
+
+                transaction.Commit();
+                return (true, "Product added successfully.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<Product> GetProductByIdAsync(int id)
+        {
+            using var conn = _dbFactory.CreateConnection();
+
+            string sql = @"
+                SELECT * FROM Product WHERE Id = @Id;
+                SELECT * FROM ProductImage WHERE ProductId = @Id;";
+
+            using var multi = await conn.QueryMultipleAsync(sql, new { Id = id });
+
+
+            var product = await multi.ReadSingleOrDefaultAsync<Product>();
+            if (product != null)
+            {
+                var images = (await multi.ReadAsync<ProductImage>()).ToList();
+                product.Images = images;
+            }
+
+            return product;
+        }
+
+        public async Task<bool> UpdateProductAsync(Product product, List<int> deleteImageIds = null, IEnumerable<IFormFile> newImages = null)
+        {
+            if (product == null)
+                throw new ArgumentNullException(nameof(product));
+
+            using var conn = (SqlConnection)_dbFactory.CreateConnection();
+            await conn.OpenAsync();
+
+            using var tran = conn.BeginTransaction();
+
+            try
+            {
+         
+                string updateProductSql = @"
+            UPDATE Products
+            SET Name = @Name,
+                Description = @Description,
+                Price = @Price,
+                StockQuantity = @StockQuantity,
+                CategoryId = @CategoryId,
+                IsActive = @IsActive,
+                UpdatedAt = GETDATE()
+            WHERE Id = @Id";
+
+                await conn.ExecuteAsync(updateProductSql, product, tran);
+
+             
+                if (deleteImageIds != null && deleteImageIds.Any())
+                {
+        
+                    var selectSql = "SELECT ImageUrl FROM ProductImage WHERE Id IN @Ids";
+                    var filesToDelete = await conn.QueryAsync<string>(selectSql, new { Ids = deleteImageIds }, tran);
+
+                    foreach (var relativePath in filesToDelete)
+                    {
+                        var fullPath = Path.Combine(_environment.WebRootPath, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                        if (File.Exists(fullPath))
+                            File.Delete(fullPath);
+                    }
+
+           
+                    string deleteImagesSql = "DELETE FROM ProductImage WHERE Id IN @Ids";
+                    await conn.ExecuteAsync(deleteImagesSql, new { Ids = deleteImageIds }, tran);
+                }
+
+        
+                if (newImages != null && newImages.Any())
+                {
+                    var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads/products");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    foreach (var file in newImages)
+                    {
+                        var extension = Path.GetExtension(file.FileName).ToLower();
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+                        if (!allowedExtensions.Contains(extension))
+                        {
+                            throw new InvalidOperationException("Only image files (.jpg, .jpeg, .png, .gif, .webp) are allowed.");
+                        }
+
+                        var fileName = $"{Guid.NewGuid()}{extension}";
+                        var filePath = Path.Combine(uploadsFolder, fileName);
+                        var IsPrimary = 0;
+               
+                        using var stream = new FileStream(filePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+
+                     
+                        var insertImageSql = @"
+                    INSERT INTO ProductImage
+                    (ProductId, ImageUrl, Extension, SizeInBytes, IsPrimary, CreatedAt, UpdatedAt)
+                    VALUES
+                    (@ProductId, @ImageUrl, @Extension, @SizeInBytes, @IsPrimary, GETDATE(), GETDATE())";
+
+                        await conn.ExecuteAsync(insertImageSql, new
+                        {
+                            ProductId = product.Id,
+                            ImageUrl = $"/uploads/products/{fileName}",
+                            Extension = extension.Replace(".", ""),
+                            SizeInBytes = file.Length,
+                            IsPrimary = IsPrimary
+                        }, tran);
+                    }
+                }
+
+                tran.Commit();
+                return true;
+            }
+            catch
+            {
+                tran.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteProductAsync(int productId)
+        {
+            if (productId <= 0)
+                throw new ArgumentException("Invalid product ID", nameof(productId));
+
+            using var conn = (SqlConnection)_dbFactory.CreateConnection();
+            await conn.OpenAsync();
+
+            using var tran = conn.BeginTransaction();
+
+            try
+            {
+              
+                var selectImagesSql = "SELECT ImageUrl FROM ProductImage WHERE ProductId = @ProductId";
+                var imageUrls = await conn.QueryAsync<string>(selectImagesSql, new { ProductId = productId }, tran);
+
+      
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads/products");
+                foreach (var url in imageUrls)
+                {
+                    var fullPath = Path.Combine(_environment.WebRootPath, url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                    if (File.Exists(fullPath))
+                        File.Delete(fullPath);
+                }
+
+            
+                var deleteImagesSql = "DELETE FROM ProductImage WHERE ProductId = @ProductId";
+                await conn.ExecuteAsync(deleteImagesSql, new { ProductId = productId }, tran);
+
+    
+                var deleteProductSql = "DELETE FROM Products WHERE Id = @Id";
+                var affectedRows = await conn.ExecuteAsync(deleteProductSql, new { Id = productId }, tran);
+
+                tran.Commit();
+                return affectedRows > 0;
+            }
+            catch
+            {
+                tran.Rollback();
+                throw;
             }
         }
 

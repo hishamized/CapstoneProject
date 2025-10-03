@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 namespace CapstoneProject.Middleware
 {
@@ -38,3 +39,5 @@ namespace CapstoneProject.Middleware
         }
     }
 }
+
+
